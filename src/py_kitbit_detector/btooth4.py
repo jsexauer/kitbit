@@ -2,6 +2,8 @@
 
 
 import datetime
+import time
+
 from bluepy.btle import Scanner, DefaultDelegate
 from time import sleep
 
@@ -24,11 +26,27 @@ def print_devices():
     devices = scanner.scan(2.0)
 
     for dev in devices:
-        print("Device %s (%s), RSSI=%d dB" % (dev.addr, dev.addrType, dev.rssi))
-        for (adtype, desc, value) in dev.getScanData():
-            print("  %s = %s" % (desc, value))
+        print_device(dev)
 
+def print_device(dev):
+    print("Device %s (%s)       RSSI=%d dB" % (dev.addr, dev.addrType, dev.rssi))
+    for (adtype, desc, value) in dev.getScanData():
+        print("  %s = %s" % (desc, value))
+
+
+def scan_for_kitbit():
+    scanner = Scanner().withDelegate(ScanDelegate())
+    while True:
+        print('-'*80)
+        print(datetime.datetime.now())
+        devices = scanner.scan(2.0)
+        for dev in devices:
+            print("Device %s (%s), RSSI=%d dB" % (dev.addr, dev.addrType, dev.rssi))
+            for (adtype, desc, value) in dev.getScanData():
+                if desc == "Complete Local Name" and value == "TY":
+                    print_device(dev)
+        time.sleep(60)
 
 
 if __name__ == '__main__':
-    print_devices()
+    scan_for_kitbit()
