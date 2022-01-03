@@ -41,7 +41,6 @@ def scan_for_kitbit():
         print(datetime.datetime.now())
         devices = scanner.scan(2.0)
         for dev in devices:
-            print("Device %s (%s), RSSI=%d dB" % (dev.addr, dev.addrType, dev.rssi))
             for (adtype, desc, value) in dev.getScanData():
                 if desc == "Complete Local Name" and value == "TY":
                     print_device(dev)
