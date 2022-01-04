@@ -39,7 +39,7 @@ class KitbitDetector:
 
 
     def call_api(self, method: str, params: Dict):
-        requests.post(self.apu_url,
+        requests.post(self.config.api_url,
                       json={
                           'method': method,
                           'params': params
