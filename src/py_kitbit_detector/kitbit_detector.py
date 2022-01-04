@@ -72,3 +72,6 @@ class KitbitDetector:
                         'rssi': dev.rssi
                     })
                     print(f"Saw {cat} with at rssi={dev.rssi} dB")
+
+if __name__ == '__main__':
+    KitbitDetector().main_loop()
