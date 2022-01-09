@@ -44,8 +44,8 @@ class KitbitServer:
         self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo())
 
         # Manually setup by each detector
-        self.detectors['DETECTOR_13a7611c'] = DetectorInfo("3rd floor - Desk", "rpi0w")
-        self.detectors['DETECTOR_f9c9d23c'] = DetectorInfo("3rd floor - 3d Printer", "octopi")
+        self.detectors['DETECTOR_1bbda189'] = DetectorInfo("3rd floor - Desk", "rpi0w")
+        self.detectors['DETECTOR_1f35bcd8'] = DetectorInfo("3rd floor - 3d Printer", "octopi")
 
 
         self.cats: Dict[str, CatInfo] = {

@@ -41,6 +41,7 @@
 {% for d in detectors.values() %}
 {% for err in d.errors %}
 ============================================================================
+{{d.name}}
 <pre>
     {{ err.exception }} at {{ err.timestamp }}
     {{ err.traceback }}
