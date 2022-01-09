@@ -33,7 +33,7 @@ class KitbitServer:
 
         self.errors: List[ErrorMessage] = []
         self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo('???'))
-        self.detectors['DETECTOR_6c348178-9748-4901-bfb0-5ddf4bd57250'] = DetectorInfo("rpi0w2")
+        self.detectors['DETECTOR_9fb4584c'] = DetectorInfo("rpi0w2")
 
 
         self.cats: Dict[str, CatInfo] = {

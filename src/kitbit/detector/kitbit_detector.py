@@ -10,11 +10,20 @@ from bluepy.btle import Scanner, DefaultDelegate
 
 from kitbit.protocol import *
 
+
+
+
 class KitbitDetector:
 
     def __init__(self):
         self.scanner = Scanner().withDelegate(ScanDelegate())
-        self.config: ConfigMessage = ConfigMessage({})
+
+        # Read in last good config if possible
+        self.detector_config_fp = 'detector_config.txt'
+        if os.path.isfile(self.detector_config_fp):
+            self.config = ConfigMessage.from_json(open(self.detector_config_fp).read())
+        else:
+            self.config: ConfigMessage = ConfigMessage({})
         self.last_config = datetime.datetime(1970,1,1)
 
         # Read in the detector uuid, creating a new one if needed
@@ -54,6 +63,10 @@ class KitbitDetector:
                 # Every 5 minutes update the config incase polling frequency or API endpoint change
                 self.config = ConfigMessage.from_dict(self.call_api('get_config', {'detector_uuid': self.detector_uuid}))
                 self.last_config = datetime.datetime.now()
+
+                # Save updated config
+                with open(self.detector_config_fp, 'w') as fh:
+                    fh.write(self.config.to_json())
 
             time.sleep(self.config.sampling_period)
 
