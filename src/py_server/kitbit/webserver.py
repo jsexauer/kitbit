@@ -18,6 +18,8 @@ class KitbitServer:
         elif method == '':
             self.endpoint_api_error(**params)
 
+        return flask.Response()
+
     def endpoint_api_observation(self, cat: str, rssi: float):
         print(cat, rssi)
 
