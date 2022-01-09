@@ -30,9 +30,14 @@ class KitbitServer:
         this_folder = Path(__file__).parent
         self.app = flask.Flask('KitbitServer', template_folder=str(this_folder / 'templates'))
         self.app.route(r'/kitbit')(self.endpoint_home)
+        self.app.route(r'/kitbit/config')(self.endpoint_config)
+        self.app.route(r'/kitbit/config/url/tesla')(self.endpoint_config_tesla)
+        self.app.route(r'/kitbit/config/url/octopi')(self.endpoint_config_octopi)
+        self.app.route(r'/kitbit/config/period/<i>')(self.endpoint_config_period)
         self.app.route(r'/kitbit/api', methods=['POST'])(self.endpoint_api)
 
-        self.detector_url = f"http://{gethostname()}:5058/kitbit/api"
+        self.config_url = f"http://{gethostname()}:5058/kitbit/api"
+        self.config_sampling_period = 5
 
         self.errors: List[ErrorMessage] = []
         self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo('???'))
@@ -51,15 +56,27 @@ class KitbitServer:
 
 
     def endpoint_home(self):
-
         context = {
             'cats': self.cats.values(),
             'detectors': self.detectors,
             'errors': self.errors,
         }
-
-
         return flask.render_template('kitbit_server_home.html', **context)
+
+
+    def endpoint_config(self):
+        return flask.render_template('kitibt_server_config.html',
+                                     config_url = self.config_url,
+                                     config_sampling_period = self.config_sampling_period)
+    def endpoint_config_tesla(self):
+        self.config_url = f"http://tesla:5058/kitbit/api"
+        return self.endpoint_config()
+    def endpoint_config_octopi(self):
+        self.config_url = f"http://octopi:5058/kitbit/api"
+        return self.endpoint_config()
+    def endpoint_config_period(self, i):
+        self.config_sampling_period = int(i)
+        return self.endpoint_config()
 
     def endpoint_api(self):
         try:
@@ -84,7 +101,9 @@ class KitbitServer:
         self.detectors[detector_uuid].last_configuration = datetime.datetime.now()
 
         cats = {c.service_id: c.name for c in self.cats.values()}
-        return ConfigMessage(cats, sampling_period=30, api_uri=self.detector_url).to_dict()
+        return ConfigMessage(cats,
+                             sampling_period=self.config_sampling_period,
+                             api_uri=self.config_url,).to_dict()
 
     def api_observation(self, **params):
         obs = ScanObservationMessage(**params)
