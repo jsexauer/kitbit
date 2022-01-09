@@ -3,34 +3,42 @@ from collections import defaultdict
 
 import flask
 from dataclasses import dataclass
+from pathlib import Path
 
 from kitbit.protocol import *
 
 
 class DetectorInfo:
     def __init__(self, detector_uuid: str, name = None):
-        self.detector_uuid = detector_uuid
         self.name = name or detector_uuid
-        self.last_observation = datetime.datetime.now()
+        self.last_observation = datetime.datetime(1970,1,1)
+        self.last_configuration = datetime.datetime(1970,1,1)
         self.errors: List[ErrorMessage] = []
 
 class CatInfo:
     def __init__(self, name, service_id):
         self.name = name
         self.service_id = service_id
+        self.last_seen_timestamp = datetime.datetime(1970,1,1)
+        self.last_seen_detector = 'None'
+
 
 class KitbitServer:
 
     def __init__(self):
-        self.app = flask.Flask('KitbitServer')
+        this_folder = Path(__file__).parent
+        self.app = flask.Flask('KitbitServer', template_folder=str(this_folder / 'templates'))
+        self.app.route(r'/kitbit')(self.endpoint_home)
         self.app.route(r'/kitbit/api', methods=['POST'])(self.endpoint_api)
 
-        self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo('???'))
         self.errors: List[ErrorMessage] = []
+        self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo('???'))
+        self.detectors['DETECTOR_6c348178-9748-4901-bfb0-5ddf4bd57250'] = DetectorInfo("rpi0w2")
 
-        self.cats = [
-            CatInfo("Juan", "01a20071376e6677637178"),
-        ]
+
+        self.cats: Dict[str, CatInfo] = {
+            "Juan": CatInfo("Juan", "01a20071376e6677637178"),
+        }
 
         self.rpc_methods = {}
 
@@ -39,6 +47,16 @@ class KitbitServer:
         self.rpc_methods['error'] = self.api_error
 
 
+    def endpoint_home(self):
+
+        context = {
+            'cats': self.cats.values(),
+            'detectors': self.detectors,
+            'errors': self.errors,
+        }
+
+
+        return flask.render_template('kitbit_server_home.html', **context)
 
     def endpoint_api(self):
         try:
@@ -59,8 +77,10 @@ class KitbitServer:
                 }
             })
 
-    def api_get_config(self):
-        cats = {c.service_id: c.name for c in self.cats}
+    def api_get_config(self, detector_uuid):
+        self.detectors[detector_uuid].last_observation = datetime.datetime.now()
+
+        cats = {c.service_id: c.name for c in self.cats.values()}
         return ConfigMessage(cats).to_dict()
 
     def api_observation(self, **params):
@@ -70,6 +90,8 @@ class KitbitServer:
 
         # TODO: record observation
         for cat, rssi in obs.cat_rssi.items():
+            self.cats[cat].last_seen_timestamp = datetime.datetime.now()
+            self.cats[cat].last_seen_detector = detector.name
             print(cat, rssi)
 
     def api_error(self, detector_uuid, error):

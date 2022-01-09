@@ -13,6 +13,8 @@ from dataclasses_jsonschema import JsonSchemaMixin
 @dataclass
 class ConfigMessage(JsonSchemaMixin):
     cat_identifiers: Dict[str, str] # service_id -> cat_name
+    sampling_period: int = 15 # How often to sample, in seconds
+    api_uri: str = r"http://tesla:5058/kitbit/api"
 
 
 @dataclass

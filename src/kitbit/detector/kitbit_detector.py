@@ -10,27 +10,22 @@ from bluepy.btle import Scanner, DefaultDelegate
 
 from kitbit.protocol import *
 
-API_URL = r"http://tesla:5058/kitbit/api"
-
-
 class KitbitDetector:
 
     def __init__(self):
         self.scanner = Scanner().withDelegate(ScanDelegate())
-        self.config: ConfigMessage
+        self.config: ConfigMessage = ConfigMessage({})
+        self.last_config = datetime.datetime(1970,1,1)
 
         # Read in the detector uuid, creating a new one if needed
         detector_uuid_fp = 'detector_uuid.txt'
         if not os.path.isfile(detector_uuid_fp):
             with open(detector_uuid_fp, 'w') as fh:
-                fh.write('DETECTOR_' + str(uuid4()))
+                fh.write('DETECTOR_' + str(uuid4())[:8])
         self.detector_uuid = open(detector_uuid_fp).read().strip()
 
-        self.config = ConfigMessage.from_dict(self.call_api('get_config', {}))
-
-
     def call_api(self, method: str, message: Dict):
-        response = requests.post(API_URL,
+        response = requests.post(self.config.api_uri,
                       json={
                           'method': method,
                           'params': message
@@ -42,15 +37,25 @@ class KitbitDetector:
         raise RpcServerException(response_json['error']['message'])
 
     def main_loop(self):
+
         while True:
             try:
                 self.scan()
             except Exception as ex:
-                self.call_api('error', {
-                    'detector_uuid': self.detector_uuid,
-                    'error': ErrorMessage.from_last_exception().to_dict()
-                })
-            time.sleep(15)
+                try:
+                    self.call_api('error', {
+                        'detector_uuid': self.detector_uuid,
+                        'error': ErrorMessage.from_last_exception().to_dict()
+                    })
+                except Exception as ex2:
+                    print(f"*** ERROR SENDING ERROR TO SERVER: {ex2}\nFOR\n{ex}")
+
+            if datetime.datetime.now() - self.last_config > datetime.timedelta(minutes=5):
+                # Every 5 minutes update the config incase polling frequency or API endpoint change
+                self.config = ConfigMessage.from_dict(self.call_api('get_config', {'detector_uuid': self.detector_uuid}))
+                self.last_config = datetime.datetime.now()
+
+            time.sleep(self.config.sampling_period)
 
 
 

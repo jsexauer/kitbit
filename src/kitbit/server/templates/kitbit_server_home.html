@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitbit Server</title>
+</head>
+<body>
+
+<h1>Cats</h1>
+<ul>
+{% for cat in cats %}
+ <li>{{cat.name}} -- Last seen: {{ cat.last_seen_detector }} at {{ cat.last_seen_timestamp }}</li>
+{% endfor %}
+</ul>
+
+<h1>Detectors</h1>
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Last Observation</th>
+        <th>Last Configuration</th>
+        <th>UUID</th>
+    </tr>
+{% for did, d in detectors.items() %}
+    <tr>
+        <td>{{d.name}}</td>
+        <td>{{d.last_observation}}</td>
+        <td>{{d.last_configuration}}</td>
+        <td>{{did}}</td>
+    </tr>
+{% endfor %}
+</table>
+
+
+
+<h1>Detector Errors</h1>
+{% for d in detectors.values() %}
+{% for err in d.errors %}
+============================================================================
+<pre>
+    {{ err.exception }} at {{ err.timestamp }}
+    {{ err.traceback }}
+</pre>
+{% endfor %}
+{% endfor %}
+
+
+<h1>Server Errors</h1>
+{% for err in errors %}
+============================================================================
+<pre>
+    {{ err.exception }} at {{ err.timestamp }}
+    {{ err.traceback }}
+</pre>
+{% endfor %}
+</body>
+</html>
