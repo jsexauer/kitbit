@@ -17,9 +17,10 @@ class KitbitDetector:
 
     def __init__(self):
         self.scanner = Scanner().withDelegate(ScanDelegate())
+        basedir = os.path.basename(__file__)
 
         # Read in last good config if possible
-        self.detector_config_fp = 'detector_config.txt'
+        self.detector_config_fp = os.path.join(basedir, 'detector_config.txt')
         if os.path.isfile(self.detector_config_fp):
             self.config = ConfigMessage.from_json(open(self.detector_config_fp).read())
         else:
@@ -27,7 +28,7 @@ class KitbitDetector:
         self.last_config = datetime.datetime(1970,1,1)
 
         # Read in the detector uuid, creating a new one if needed
-        detector_uuid_fp = 'detector_uuid.txt'
+        detector_uuid_fp = os.path.join(basedir, 'detector_uuid.txt')
         if not os.path.isfile(detector_uuid_fp):
             with open(detector_uuid_fp, 'w') as fh:
                 fh.write('DETECTOR_' + str(uuid4())[:8])

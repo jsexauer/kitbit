@@ -21,6 +21,7 @@
         <th>Name</th>
         <th>Last Observation</th>
         <th>Last Configuration</th>
+        <th>Host</th>
         <th>UUID</th>
     </tr>
 {% for did, d in detectors.items() %}
@@ -28,6 +29,7 @@
         <td>{{d.name}}</td>
         <td>{{d.last_observation}}</td>
         <td>{{d.last_configuration}}</td>
+        <td>{{d.host}}</td>
         <td>{{did}}</td>
     </tr>
 {% endfor %}

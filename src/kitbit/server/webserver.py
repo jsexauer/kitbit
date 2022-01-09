@@ -10,8 +10,9 @@ from kitbit.protocol import *
 
 
 class DetectorInfo:
-    def __init__(self, detector_uuid: str, name = None):
-        self.name = name or detector_uuid
+    def __init__(self, name = '???', host='???'):
+        self.name = name
+        self.host = host
         self.last_observation = datetime.datetime(1970,1,1)
         self.last_configuration = datetime.datetime(1970,1,1)
         self.errors: List[ErrorMessage] = []
@@ -40,8 +41,11 @@ class KitbitServer:
         self.config_sampling_period = 5
 
         self.errors: List[ErrorMessage] = []
-        self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo('???'))
-        self.detectors['DETECTOR_9fb4584c'] = DetectorInfo("rpi0w2")
+        self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo())
+
+        # Manually setup by each detector
+        self.detectors['DETECTOR_13a7611c'] = DetectorInfo("3rd floor - Desk", "rpi0w")
+        self.detectors['DETECTOR_f9c9d23c'] = DetectorInfo("3rd floor - 3d Printer", "octopi")
 
 
         self.cats: Dict[str, CatInfo] = {
