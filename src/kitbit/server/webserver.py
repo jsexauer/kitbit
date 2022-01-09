@@ -4,6 +4,7 @@ from collections import defaultdict
 import flask
 from dataclasses import dataclass
 from pathlib import Path
+from socket import gethostname
 
 from kitbit.protocol import *
 
@@ -30,6 +31,8 @@ class KitbitServer:
         self.app = flask.Flask('KitbitServer', template_folder=str(this_folder / 'templates'))
         self.app.route(r'/kitbit')(self.endpoint_home)
         self.app.route(r'/kitbit/api', methods=['POST'])(self.endpoint_api)
+
+        self.detector_url = f"http://{gethostname()}:5058/kitbit/api"
 
         self.errors: List[ErrorMessage] = []
         self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo('???'))
@@ -78,10 +81,10 @@ class KitbitServer:
             })
 
     def api_get_config(self, detector_uuid):
-        self.detectors[detector_uuid].last_observation = datetime.datetime.now()
+        self.detectors[detector_uuid].last_configuration = datetime.datetime.now()
 
         cats = {c.service_id: c.name for c in self.cats.values()}
-        return ConfigMessage(cats).to_dict()
+        return ConfigMessage(cats, sampling_period=30, api_uri=self.detector_url).to_dict()
 
     def api_observation(self, **params):
         obs = ScanObservationMessage(**params)

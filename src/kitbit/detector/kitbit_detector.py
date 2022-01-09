@@ -49,6 +49,17 @@ class KitbitDetector:
 
         while True:
             try:
+                if datetime.datetime.now() - self.last_config > datetime.timedelta(minutes=5):
+                    # Every 5 minutes update the config incase polling frequency or API endpoint change
+                    self.config = ConfigMessage.from_dict(
+                        self.call_api('get_config', {'detector_uuid': self.detector_uuid}))
+                    self.last_config = datetime.datetime.now()
+
+                    # Save updated config
+                    with open(self.detector_config_fp, 'w') as fh:
+                        fh.write(self.config.to_json())
+
+                # Now that we are sure we have the latest config, do a scan
                 self.scan()
             except Exception as ex:
                 try:
@@ -59,14 +70,7 @@ class KitbitDetector:
                 except Exception as ex2:
                     print(f"*** ERROR SENDING ERROR TO SERVER: {ex2}\nFOR\n{ex}")
 
-            if datetime.datetime.now() - self.last_config > datetime.timedelta(minutes=5):
-                # Every 5 minutes update the config incase polling frequency or API endpoint change
-                self.config = ConfigMessage.from_dict(self.call_api('get_config', {'detector_uuid': self.detector_uuid}))
-                self.last_config = datetime.datetime.now()
 
-                # Save updated config
-                with open(self.detector_config_fp, 'w') as fh:
-                    fh.write(self.config.to_json())
 
             time.sleep(self.config.sampling_period)
 
