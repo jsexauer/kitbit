@@ -48,9 +48,9 @@ class KitbitServer:
 
             result = self.rpc_methods[method](**params)
 
-            return {
-                'result': flask.jsonify(result),
-            }
+            return flask.jsonify({
+                'result': result,
+            })
         except Exception as ex:
             self.errors.append(ErrorMessage.from_last_exception())
             return flask.jsonify({
@@ -61,7 +61,7 @@ class KitbitServer:
 
     def api_get_config(self):
         cats = {c.service_id: c.name for c in self.cats}
-        return ConfigMessage(cats)
+        return ConfigMessage(cats).to_dict()
 
     def api_observation(self, **params):
         obs = ScanObservationMessage(**params)

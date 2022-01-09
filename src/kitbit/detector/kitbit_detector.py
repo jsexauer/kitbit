@@ -35,7 +35,11 @@ class KitbitDetector:
                           'method': method,
                           'params': message
                       })
-        return response.json()
+        response_json: Dict = response.json()
+
+        if 'result' in response_json.keys():
+            return response_json['result']
+        raise RpcServerException(response_json['error']['message'])
 
     def main_loop(self):
         while True:
@@ -80,6 +84,9 @@ class ScanDelegate(DefaultDelegate):
         elif isNewData:
             pass # print("Received new data from", dev.addr)
 
+
+class RpcServerException(Exception):
+    pass
 
 if __name__ == '__main__':
     KitbitDetector().main_loop()
