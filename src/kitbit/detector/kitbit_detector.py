@@ -17,7 +17,7 @@ class KitbitDetector:
 
     def __init__(self):
         self.scanner = Scanner().withDelegate(ScanDelegate())
-        basedir = os.path.basename(__file__)
+        basedir = os.path.dirname(__file__)
 
         # Read in last good config if possible
         self.detector_config_fp = os.path.join(basedir, 'detector_config.txt')
