@@ -2,11 +2,18 @@ import datetime
 from collections import defaultdict, deque
 
 import flask
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from socket import gethostname
 
 from kitbit.protocol import *
+
+@dataclass
+class ObservationInfo:
+    detector: str
+    beacon: str
+    rssi: Optional[float]
+    timestamp: datetime.datetime = field(default_factory=datetime.datetime.now)
 
 
 class DetectorInfo:
@@ -16,6 +23,26 @@ class DetectorInfo:
         self.last_observation = datetime.datetime(1970,1,1)
         self.last_configuration = datetime.datetime(1970,1,1)
         self.errors: List[ErrorMessage] = []
+        self.recent_observations: Deque[ObservationInfo] = deque(maxlen=10)
+
+    def last_5_min_observation(self, beacon: str) -> List[ObservationInfo]:
+        """List of observations within the last 5 minutes"""
+        result = []
+        ref = datetime.datetime.now()
+        for i in range(5):
+            start = ref - datetime.timedelta(minutes=i)
+            end = ref - datetime.timedelta(minutes=i+1)
+            in_range = [o for o in self.recent_observations if start > o.timestamp >= end and o.beacon == beacon]
+            if len(in_range) > 0:
+                result.append(in_range[0])
+            else:
+                result.append(ObservationInfo(detector=self.name, beacon=beacon, rssi=None, timestamp=start))
+        return result
+
+    @property
+    def is_stale(self):
+        return self.last_observation <= datetime.datetime.now() - datetime.timedelta(minutes=2)
+
 
 class CatInfo:
     def __init__(self, name, service_id):
@@ -45,7 +72,7 @@ class KitbitServer:
         self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo())
 
         # Manually setup by each detector
-        self.detectors['DETECTOR_1bbda189'] = DetectorInfo("3rd floor - Desk", "rpi0w")
+        self.detectors['DETECTOR_1bbda189'] = DetectorInfo("Back Bedroom", "rpi0w")
         self.detectors['DETECTOR_1f35bcd8'] = DetectorInfo("3rd floor - 3d Printer", "octopi")
         self.detectors['DETECTOR_762876f7'] = DetectorInfo("Dining Room", "gardenpi")
         self.detectors['DETECTOR_74c12192'] = DetectorInfo("Front Room", "rpi0wh")
@@ -63,15 +90,12 @@ class KitbitServer:
         self.rpc_methods['observation'] = self.api_observation
         self.rpc_methods['error'] = self.api_error
 
-        self.recent_observations = deque(maxlen=10)
-
 
     def endpoint_home(self):
         context = {
             'cats': self.cats.values(),
             'detectors': self.detectors,
             'errors': self.errors,
-            'recent_observations': self.recent_observations
         }
         return flask.render_template('kitbit_server_home.html', **context)
 
@@ -129,8 +153,12 @@ class KitbitServer:
         for cat, rssi in obs.cat_rssi.items():
             self.cats[cat].last_seen_timestamp = datetime.datetime.now()
             self.cats[cat].last_seen_detector = detector.name
-            self.recent_observations.append((datetime.datetime.now(), cat, detector, rssi))
-            print(cat, rssi)
+            detector.recent_observations.append(ObservationInfo(
+                detector=detector.name,
+                beacon=cat,
+                rssi=rssi
+            ))
+            print(cat, detector.name, rssi)
 
     def api_error(self, detector_uuid, error):
         err = ErrorMessage(**error)

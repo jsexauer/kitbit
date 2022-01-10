@@ -9,23 +9,29 @@
 [<a href="/kitbit/config">Config</a>]
 
 <h1>Recent Observations</h1>
+{% for c in cats %}
+<h2>{{ c.name }}</h2>
 <table border="1">
     <tr>
-        <th>Timestamp</th>
-        <th>Cat</th>
         <th>Detector</th>
-        <th>RSSI</th>
+        <th>-0 min</th>
+        <th>-1 min</th>
+        <th>-2 min</th>
+        <th>-3 min</th>
+        <th>-4 min</th>
     </tr>
-{% for o in recent_observations %}
+{% for d in detectors.values() %}
     <tr>
-        <td>{{o[0]}}</td>
-        <td>{{o[1]}}</td>
-        <td>{{o[2].name}} ({{o[2].host}})</td>
-        <td>{{o[3]}}</td>
+        <td>{{ d.name }}</td>
+        <td>{{ d.last_5_min_observation(c.name)[0].rssi or ''  }}</td>
+        <td>{{ d.last_5_min_observation(c.name)[1].rssi or ''  }}</td>
+        <td>{{ d.last_5_min_observation(c.name)[2].rssi or '' }}</td>
+        <td>{{ d.last_5_min_observation(c.name)[3].rssi or '' }}</td>
+        <td>{{ d.last_5_min_observation(c.name)[4].rssi or '' }}</td>
     </tr>
 {% endfor %}
 </table>
-
+{% endfor %}
 
 <h1>Cats</h1>
 <ul>
@@ -38,6 +44,7 @@
 <table border="1">
     <tr>
         <th>Name</th>
+        <th>Stale</th>
         <th>Last Observation</th>
         <th>Last Configuration</th>
         <th>Host</th>
@@ -46,6 +53,7 @@
 {% for did, d in detectors.items() %}
     <tr>
         <td>{{d.name}}</td>
+        <td>{{'STALE' if d.is_stale else ''}}</td>
         <td>{{d.last_observation}}</td>
         <td>{{d.last_configuration}}</td>
         <td>{{d.host}}</td>
