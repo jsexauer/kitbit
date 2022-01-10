@@ -8,6 +8,25 @@
 
 [<a href="/kitbit/config">Config</a>]
 
+<h1>Recent Observations</h1>
+<table border="1">
+    <tr>
+        <th>Timestamp</th>
+        <th>Cat</th>
+        <th>Detector</th>
+        <th>RSSI</th>
+    </tr>
+{% for o in recent_observations %}
+    <tr>
+        <td>{{o[0]}}</td>
+        <td>{{o[1]}}</td>
+        <td>{{o[2].name}} ({{o[2].host}})</td>
+        <td>{{o[3]}}</td>
+    </tr>
+{% endfor %}
+</table>
+
+
 <h1>Cats</h1>
 <ul>
 {% for cat in cats %}
@@ -41,7 +60,7 @@
 {% for d in detectors.values() %}
 {% for err in d.errors %}
 ============================================================================
-{{d.name}}
+<p>{{d.name}}</p>
 <pre>
     {{ err.exception }} at {{ err.timestamp }}
     {{ err.traceback }}

@@ -1,5 +1,5 @@
 import datetime
-from collections import defaultdict
+from collections import defaultdict, deque
 
 import flask
 from dataclasses import dataclass
@@ -34,11 +34,12 @@ class KitbitServer:
         self.app.route(r'/kitbit/config')(self.endpoint_config)
         self.app.route(r'/kitbit/config/url/tesla')(self.endpoint_config_tesla)
         self.app.route(r'/kitbit/config/url/octopi')(self.endpoint_config_octopi)
+        self.app.route(r'/kitbit/config/url/rpi4')(self.endpoint_config_rpi4)
         self.app.route(r'/kitbit/config/period/<i>')(self.endpoint_config_period)
         self.app.route(r'/kitbit/api', methods=['POST'])(self.endpoint_api)
 
         self.config_url = f"http://{gethostname()}:5058/kitbit/api"
-        self.config_sampling_period = 5
+        self.config_sampling_period = 30
 
         self.errors: List[ErrorMessage] = []
         self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo())
@@ -46,6 +47,10 @@ class KitbitServer:
         # Manually setup by each detector
         self.detectors['DETECTOR_1bbda189'] = DetectorInfo("3rd floor - Desk", "rpi0w")
         self.detectors['DETECTOR_1f35bcd8'] = DetectorInfo("3rd floor - 3d Printer", "octopi")
+        self.detectors['DETECTOR_762876f7'] = DetectorInfo("Dining Room", "gardenpi")
+        self.detectors['DETECTOR_74c12192'] = DetectorInfo("Front Room", "rpi0wh")
+        self.detectors['DETECTOR_3b81b2ca'] = DetectorInfo("Hallway", "rpi0w2")
+        self.detectors['DETECTOR_238260ce'] = DetectorInfo("Couch", "rpi4")
 
 
         self.cats: Dict[str, CatInfo] = {
@@ -58,12 +63,15 @@ class KitbitServer:
         self.rpc_methods['observation'] = self.api_observation
         self.rpc_methods['error'] = self.api_error
 
+        self.recent_observations = deque(maxlen=10)
+
 
     def endpoint_home(self):
         context = {
             'cats': self.cats.values(),
             'detectors': self.detectors,
             'errors': self.errors,
+            'recent_observations': self.recent_observations
         }
         return flask.render_template('kitbit_server_home.html', **context)
 
@@ -74,6 +82,9 @@ class KitbitServer:
                                      config_sampling_period = self.config_sampling_period)
     def endpoint_config_tesla(self):
         self.config_url = f"http://tesla:5058/kitbit/api"
+        return self.endpoint_config()
+    def endpoint_config_rpi4(self):
+        self.config_url = f"http://rpi4:5058/kitbit/api"
         return self.endpoint_config()
     def endpoint_config_octopi(self):
         self.config_url = f"http://octopi:5058/kitbit/api"
@@ -118,6 +129,7 @@ class KitbitServer:
         for cat, rssi in obs.cat_rssi.items():
             self.cats[cat].last_seen_timestamp = datetime.datetime.now()
             self.cats[cat].last_seen_detector = detector.name
+            self.recent_observations.append((datetime.datetime.now(), cat, detector, rssi))
             print(cat, rssi)
 
     def api_error(self, detector_uuid, error):
