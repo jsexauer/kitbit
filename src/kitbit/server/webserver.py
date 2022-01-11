@@ -62,6 +62,7 @@ class KitbitServer:
         self.app.route(r'/kitbit/config/url/tesla')(self.endpoint_config_tesla)
         self.app.route(r'/kitbit/config/url/octopi')(self.endpoint_config_octopi)
         self.app.route(r'/kitbit/config/url/rpi4')(self.endpoint_config_rpi4)
+        self.app.route(r'/kitbit/config/url/laptop')(self.endpoint_config_laptop)
         self.app.route(r'/kitbit/config/period/<i>')(self.endpoint_config_period)
         self.app.route(r'/kitbit/api', methods=['POST'])(self.endpoint_api)
 
@@ -109,6 +110,9 @@ class KitbitServer:
         return self.endpoint_config()
     def endpoint_config_rpi4(self):
         self.config_url = f"http://rpi4:5058/kitbit/api"
+        return self.endpoint_config()
+    def endpoint_config_laptop(self):
+        self.config_url = f"http://jason-laptop:5058/kitbit/api"
         return self.endpoint_config()
     def endpoint_config_octopi(self):
         self.config_url = f"http://octopi:5058/kitbit/api"
