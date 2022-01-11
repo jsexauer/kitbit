@@ -146,6 +146,7 @@ class KitbitServer:
         cols = {
             'data_id': 'text',
             'timestamp': 'text',
+            'location': 'str',
         }
 
         for d in self.detectors.values():
@@ -169,10 +170,11 @@ class KitbitServer:
 
 
     def endpoint_train_record(self, location_id):
-        location = [l for l in self.locations if l.id == int(location_id)]
+        location = [l for l in self.locations if l.id == int(location_id)][0]
         data = {
             'data_id': str(uuid.uuid4())[:6],
             'timestamp': datetime.datetime.now().replace(microsecond=0, second=0),
+            'location': str(location),
         }
 
         for d in self.detectors.values():
