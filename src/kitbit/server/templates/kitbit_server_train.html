@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitbit Training</title>
+</head>
+<body>
+
+<h1>Locations</h1>
+Choose the location to record an observation at:
+<h2>Floor 1</h2>
+<ul>
+    {% for l in locations %}
+    {% if not loop.first and loop.previtem.floor != l.floor %}
+    {% if not loop.first %}
+    </ul>
+    {% endif %}
+
+    <h2>Floor {{l.floor}}</h2>
+    <ul>
+    {% endif %}
+
+    <li>
+        <a href="/kitbit/train/{{l.id}}">{{ l }}</a>
+    </li>
+    {% endfor %}
+</ul>
+
+</body>
+</html>
