@@ -8,7 +8,12 @@
 
 
 [<a href="/kitbit/train">Train</a>]
+[<a href="/kitbit/autotrain">Auto Train</a>]
 [<a href="/kitbit/config">Config</a>]
+
+{% if autotrain_enabled %}
+<p>Autotrain Enabled: {{ autotrain_location }} until {{autotrain_until}}.  [<a href="/kitbit/autotrain/cancel">Cancel</a>]</p>
+{% endif %}
 
 <h1>Recent Observations</h1>
 {% for c in cats %}

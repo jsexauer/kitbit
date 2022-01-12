@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Kitbit Training</title>
+    <title>Kitbit {{prefix}} Training</title>
 </head>
 <body>
 
 <h1>Locations</h1>
-Choose the location to record an observation at:
+Choose the location to {% if prefix %} autotrain at for the next 15 minutes: {% else %} observe an observation at: {% endif %}
 <h2>Floor 1</h2>
 <ul>
     {% for l in locations %}
@@ -21,7 +21,7 @@ Choose the location to record an observation at:
     {% endif %}
 
     <li>
-        <a href="/kitbit/train/{{l.id}}">{{ l }}</a>
+        <a href="/kitbit/{{prefix}}train/{{l.id}}">{{ l }}</a>
     </li>
     {% endfor %}
 </ul>

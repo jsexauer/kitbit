@@ -1,11 +1,13 @@
 import datetime
 import os
 import sqlite3
+import time
 import uuid
 from collections import defaultdict, deque
 from typing import *
 
 import flask
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from socket import gethostname
@@ -86,6 +88,9 @@ class KitbitServer:
         self.app.route(r'/kitbit/config/period/<i>')(self.endpoint_config_period)
         self.app.route(r'/kitbit/train')(self.endpoint_train)
         self.app.route(r'/kitbit/train/<location_id>')(self.endpoint_train_record)
+        self.app.route(r'/kitbit/autotrain')(self.endpoint_autotrain)
+        self.app.route(r'/kitbit/autotrain/cancel')(self.endpoint_autotrain_cancel)
+        self.app.route(r'/kitbit/autotrain/<location_id>')(self.endpoint_autotrain_record)
         self.app.route(r'/kitbit/api', methods=['POST'])(self.endpoint_api)
 
         self.config_url = f"http://{gethostname()}:5058/kitbit/api"
@@ -134,6 +139,10 @@ class KitbitServer:
             "Juan": CatInfo("Juan", "01a20071376e6677637178"),
         }
 
+        self.autotrain_until = datetime.datetime(1970,1,1)
+        self.autotrain_location = None
+        threading.Thread(target=self.thread_autotrain, name="ThreadAutotrain").start()
+
         self.rpc_methods = {}
 
         self.rpc_methods['get_config'] = self.api_get_config
@@ -165,22 +174,39 @@ class KitbitServer:
             'cats': self.cats.values(),
             'detectors': self.detectors,
             'errors': self.errors,
+            'autotrain_enabled': self.autotrain_enabled,
+            'autotrain_location': self.autotrain_location,
+            'autotrain_until': self.autotrain_until,
         }
         return flask.render_template('kitbit_server_home.html', **context)
 
 
     def endpoint_train_record(self, location_id):
         location = [l for l in self.locations if l.id == int(location_id)][0]
+        self.record_location("Juan", str(location))
+        return flask.redirect(flask.url_for(r"endpoint_home"))
+
+    def endpoint_train(self):
+        return flask.render_template('kitbit_server_train.html',
+                                     locations = self.locations,
+                                     prefix="")
+
+
+    @property
+    def autotrain_enabled(self):
+        return datetime.datetime.now() < self.autotrain_until
+
+    def record_location(self, cat, location):
         data = {
             'data_id': str(uuid.uuid4())[:6],
             'timestamp': datetime.datetime.now().replace(microsecond=0, second=0),
-            'location': str(location),
+            'location': location,
         }
 
         for d in self.detectors.values():
             if d.is_stale:
                 raise Exception("all sensors must be online")
-            data[d.name] = d.last_5_min_observation("Juan")[0].rssi
+            data[d.name] = d.last_5_min_observation(cat)[0].rssi
 
         sql = f"insert into training_data ({','.join([c for c in data.keys()])}) " \
               f"values ({','.join(['?' for c in data.keys()])})"
@@ -189,11 +215,35 @@ class KitbitServer:
         cur.execute(sql, tuple(data.values()))
         db.commit()
         db.close()
+
+    def thread_autotrain(self):
+        while True:
+            if not self.autotrain_enabled:
+                time.sleep(15)
+                continue
+            try:
+                self.record_location("Juan", str(self.autotrain_location))
+            except Exception as ex:
+                print(f"*** ERROR IN AUTOTRAIN: {ex}")
+            time.sleep(60)
+
+
+    def endpoint_autotrain_record(self, location_id):
+        location = [l for l in self.locations if l.id == int(location_id)][0]
+        self.autotrain_location = str(location)
+        self.autotrain_until = datetime.datetime.now() + datetime.timedelta(minutes=15)
+
         return flask.redirect(flask.url_for(r"endpoint_home"))
 
-    def endpoint_train(self):
+    def endpoint_autotrain_cancel(self):
+        self.autotrain_until = datetime.datetime(1970,1,1)
+
+        return flask.redirect(flask.url_for(r"endpoint_home"))
+
+    def endpoint_autotrain(self):
         return flask.render_template('kitbit_server_train.html',
-                                     locations = self.locations)
+                                     locations = self.locations,
+                                     prefix="auto")
 
 
     def endpoint_config(self):
