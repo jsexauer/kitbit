@@ -6,7 +6,7 @@ from uuid import uuid4
 import requests
 import traceback
 
-from bluepy.btle import Scanner, DefaultDelegate
+from bluepy.btle import Scanner, DefaultDelegate, BTLEManagementError
 
 from kitbit.protocol import *
 
@@ -78,7 +78,17 @@ class KitbitDetector:
 
 
     def scan(self):
-        devices = self.scanner.scan(2.0)
+        scan_successful = False
+        for n in range(3):
+            try:
+                devices = self.scanner.scan(2.0)
+                scan_successful = True
+            except BTLEManagementError:
+                # May fail to acquire scan if someone else is trying to use the BT scanner at the same time
+                # Wait a moment and try again
+                time.sleep(2)
+        if not scan_successful:
+            raise Exception(f"Unable to scan after 3 attempts")
 
         result = ScanObservationMessage(
             detector_uuid=self.detector_uuid,
