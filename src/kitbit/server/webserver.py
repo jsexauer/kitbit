@@ -28,7 +28,7 @@ class DetectorInfo:
         self.host = host
         self.last_observation = datetime.datetime(1970,1,1)
         self.last_configuration = datetime.datetime(1970,1,1)
-        self.errors: List[ErrorMessage] = []
+        self.errors: Deque[ErrorMessage] = deque(maxlen=5)
         self.recent_observations: Deque[ObservationInfo] = deque(maxlen=10)
 
     def last_5_min_observation(self, beacon: str) -> List[ObservationInfo]:
@@ -96,7 +96,7 @@ class KitbitServer:
         self.config_url = f"http://{gethostname()}:5058/kitbit/api"
         self.config_sampling_period = 30
 
-        self.errors: List[ErrorMessage] = []
+        self.errors: Deque[ErrorMessage] = deque(maxlen=5)
         self.detectors: Dict[str, DetectorInfo] = defaultdict(lambda: DetectorInfo())
 
         # Manually setup by each detector
