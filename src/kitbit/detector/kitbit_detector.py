@@ -96,6 +96,19 @@ class KitbitDetector:
         self.call_api('observation', result.to_dict())
 
 
+    def print_all_devices(self):
+        # List all BLE devices found.  Used for figuring out the identifying information of a BLE beacon
+        devices = self.scanner.scan(2.0)
+
+        print('='*80)
+        print(f"At {datetime.datetime.now()}:")
+        for dev in devices:
+            print("Device %s (%s), RSSI=%d dB" % (dev.addr, dev.addrType, dev.rssi))
+            for (adtype, desc, value) in dev.getScanData():
+                print("  %s = %s" % (desc, value))
+        print('=' * 80)
+
+
 
 class ScanDelegate(DefaultDelegate):
     def __init__(self):
